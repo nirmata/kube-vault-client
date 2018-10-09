@@ -23,6 +23,6 @@ func lookupJwt() {
 		return
 	}
 
-	*token = s
+	*jwt = s
 	return
 }

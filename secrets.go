@@ -35,7 +35,10 @@ func fetchSecrets(paths string, client *api.Client) ([]*secret, error) {
 	}
 
 	for _, s := range secrets {
-		fetchSecret(s, client)
+		glog.V(6).Infof("Fetching secret path=%s key=%s", s.path, s.key)
+		if err := fetchSecret(s, client); err != nil {
+			return nil, err
+		}
 	}
 
 	return secrets, nil
@@ -64,10 +67,16 @@ func parsePaths(paths string) ([]*secret, error) {
 	return results, nil
 }
 
-func fetchSecret(s *secret, client *api.Client) (*secret, error) {
+func fetchSecret(s *secret, client *api.Client) error {
 	resp, err := client.Logical().Read(s.path)
 	if err != nil {
-		return nil, err
+		glog.V(6).Infof("Failed to fetch secret %s from %s", s.String(), client.Address())
+		return err
+	}
+
+	if resp == nil {
+		glog.V(3).Infof("No entry found at path %s", s.path)
+		return fmt.Errorf("Secret (%s) not found", s.path)
 	}
 
 	// Vault v1 KV returns secrets in "data"
@@ -77,11 +86,17 @@ func fetchSecret(s *secret, client *api.Client) (*secret, error) {
 		data = resp.Data["data"].(map[string]interface{})
 	}
 
-	val := data[s.key]
-	s.value = val.(string)
+	glog.V(6).Infof("Found %d entries at path %s", len(data), s.path)
 
-	glog.Infof("Secret: %s", s.String())
-	return s, nil
+	val, ok := data[s.key]
+	if !ok {
+		glog.V(3).Infof("No entry found at path %s and key %s", s.path, s.key)
+		return fmt.Errorf("Secret (%s#%s) not found", s.path, s.key)
+	}
+
+	s.value = val.(string)
+	glog.Infof("Got secret: %s", s.String())
+	return nil
 }
 
 func writeSecrets(secrets []*secret, location string) error {
