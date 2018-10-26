@@ -34,14 +34,18 @@ func fetchSecrets(paths string, client *api.Client) ([]*secret, error) {
 		return nil, err
 	}
 
+	results := make([]*secret, 0)
 	for _, s := range secrets {
 		glog.V(6).Infof("Fetching secret path=%s key=%s", s.path, s.key)
-		if err := fetchSecret(s, client); err != nil {
+		vals, err := fetchSecret(s, client)
+		if err != nil {
 			return nil, err
 		}
+
+		results = append(results, vals...)
 	}
 
-	return secrets, nil
+	return results, nil
 }
 
 func parsePaths(paths string) ([]*secret, error) {
@@ -49,34 +53,45 @@ func parsePaths(paths string) ([]*secret, error) {
 	p := strings.Split(paths, ",")
 	for _, e := range p {
 		e = strings.TrimSpace(e)
-
 		toks := strings.Split(e, "#")
-		if len(toks) != 3 {
+		num := len(toks)
+		if num == 0 || num > 3 {
 			return nil, fmt.Errorf("Invalid entry %s", e)
 		}
 
-		s := &secret{
-			path: toks[0],
-			key:  toks[1],
-			name: toks[2],
+		s := &secret{}
+		switch num {
+		case 1:
+			s.path = strings.TrimSpace(toks[0])
+
+		case 2:
+			s.path = strings.TrimSpace(toks[0])
+			s.key = strings.TrimSpace(toks[1])
+			s.name = strings.TrimSpace(toks[1])
+
+		case 3:
+			s.path = strings.TrimSpace(toks[0])
+			s.key = strings.TrimSpace(toks[1])
+			s.name = strings.TrimSpace(toks[2])
 		}
 
 		results = append(results, s)
 	}
 
+	glog.V(6).Infof("Parsed paths %+v", results)
 	return results, nil
 }
 
-func fetchSecret(s *secret, client *api.Client) error {
+func fetchSecret(s *secret, client *api.Client) ([]*secret, error) {
 	resp, err := client.Logical().Read(s.path)
 	if err != nil {
 		glog.V(6).Infof("Failed to fetch secret %s from %s", s.String(), client.Address())
-		return err
+		return nil, err
 	}
 
 	if resp == nil {
 		glog.V(3).Infof("No entry found at path %s", s.path)
-		return fmt.Errorf("Secret (%s) not found", s.path)
+		return nil, fmt.Errorf("Secret (%s) not found", s.path)
 	}
 
 	// Vault v1 KV returns secrets in "data"
@@ -88,15 +103,29 @@ func fetchSecret(s *secret, client *api.Client) error {
 
 	glog.V(6).Infof("Found %d entries at path %s", len(data), s.path)
 
-	val, ok := data[s.key]
-	if !ok {
-		glog.V(3).Infof("No entry found at path %s and key %s", s.path, s.key)
-		return fmt.Errorf("Secret (%s#%s) not found", s.path, s.key)
+	if s.key != "" {
+		val, ok := data[s.key]
+		if !ok {
+			glog.V(3).Infof("No entry found at path %s and key %s", s.path, s.key)
+			return nil, fmt.Errorf("Secret (%s#%s) not found", s.path, s.key)
+		}
+
+		s.value = val.(string)
+		glog.Infof("Got secret: %s", s.String())
+		results := make([]*secret, 1, 1)
+		results[0] = s
+		return results, nil
 	}
 
-	s.value = val.(string)
-	glog.Infof("Got secret: %s", s.String())
-	return nil
+	results := make([]*secret, 0)
+	for k, v := range data {
+		strVal := v.(string)
+		secretEntry := &secret{path: s.path, key: k, name: k, value: strVal}
+		glog.Infof("Got secret: %s", secretEntry.String())
+		results = append(results, secretEntry)
+	}
+
+	return results, nil
 }
 
 func writeSecrets(secrets []*secret, location string) error {

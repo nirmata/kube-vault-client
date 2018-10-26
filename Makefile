@@ -1,16 +1,22 @@
 .DEFAULT_GOAL: build
 
-TAG=latest
-PREFIX?=registry-v2.nirmata.io/nirmata/nirmata-vault
+GIT_VERSION := $(shell git describe --dirty --always --tags)
+TAG?=$(GIT_VERSION)
+IMAGE?=kube-vault-client
+PREFIX?=nirmata/$(IMAGE)
 ARCH?=amd64
 
-build:
+version:
+	@echo "building $(PREFIX):$(TAG)"
+
+build: version
 	go build -v bitbucket.org/nirmata/go-vault
 
-
-docker: 
-	CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) go build -v -a -installsuffix cgo -ldflags '-w -s' -o vault-client
+dockerBuild: build
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) go build -v -a -installsuffix cgo -ldflags '-w -s' -o $(IMAGE)
 	docker build -t $(PREFIX):$(TAG) .
+
+dockerPush: dockerBuild
 	docker push $(PREFIX):$(TAG)
 
 clean: 

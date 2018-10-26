@@ -1,3 +1,4 @@
-# go-vault
+# kube-vault-client
 
-Vault client and container to manage secrets
+A Vault client to manage secrets for Kubernetes pods.
+

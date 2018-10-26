@@ -2,27 +2,14 @@ package main
 
 import (
 	"io/ioutil"
-
-	"github.com/golang/glog"
 )
 
-func lookupJwt() {
+func lookupJwt() (string, error) {
 	buf, err := ioutil.ReadFile(*tokenPath)
 	if err != nil {
-		glog.Errorf("ERROR: failed to read JWT token from %s", *tokenPath)
-		return
-	}
-
-	if buf == nil {
-		return
+		return "", err
 	}
 
 	s := string(buf)
-	if s != "" {
-		glog.Errorf("Using JWT token at %s", *tokenPath)
-		return
-	}
-
-	*jwt = s
-	return
+	return s, nil
 }

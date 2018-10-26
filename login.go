@@ -1,7 +1,11 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"net/http"
 	"path"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/hashicorp/vault/api"
@@ -9,12 +13,12 @@ import (
 
 func kubeLogin() (*api.Client, error) {
 	glog.Infof("Connecting to Vault at %s", *url)
-	config := &api.Config{
-		Address: *url,
-	}
 
-	tls := &api.TLSConfig{Insecure: true}
-	config.ConfigureTLS(tls)
+	httpClient := buildHTTPClient(*url)
+	config := &api.Config{
+		Address:    *url,
+		HttpClient: httpClient,
+	}
 
 	client, err := api.NewClient(config)
 	if err != nil {
@@ -23,13 +27,13 @@ func kubeLogin() (*api.Client, error) {
 	}
 
 	body := map[string]interface{}{
-		"role": *role,
+		"role": *kubeAuthRole,
 		"jwt":  *jwt,
 	}
 
 	loginPath := "/v1/auth/" + *kubeAuthPath + "/login"
 	loginPath = path.Clean(loginPath)
-	glog.Infof("Vault login using path %s role %s jwt [%d bytes]", loginPath, *role, len(*jwt))
+	glog.Infof("Vault login using path %s role %s jwt [%d bytes]", loginPath, *kubeAuthRole, len(*jwt))
 
 	req := client.NewRequest("POST", loginPath)
 	req.SetJSONBody(body)
@@ -53,9 +57,28 @@ func kubeLogin() (*api.Client, error) {
 
 	glog.Infof("Login results %+v", result)
 
-	auth := result.Auth
-	glog.Infof("Got auth %+v", auth)
-
-	client.SetToken(auth.ClientToken)
+	client.SetToken(result.Auth.ClientToken)
 	return client, nil
+}
+
+func buildHTTPClient(url string) *http.Client {
+
+	if strings.HasPrefix(url, "http://") {
+		return http.DefaultClient
+	}
+
+	sslCerts := CACERTS
+	if *cert != "" {
+		sslCerts = []byte(*cert)
+	}
+
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(sslCerts)
+	tlsConfig := &tls.Config{RootCAs: caCertPool, InsecureSkipVerify: *insecure}
+	transport := &http.Transport{
+		TLSClientConfig: tlsConfig,
+	}
+
+	httpClient := &http.Client{Transport: transport}
+	return httpClient
 }
