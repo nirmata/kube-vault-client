@@ -16,6 +16,10 @@ dockerBuild: build
 dockerPush: dockerBuild
 	docker push $(PREFIX):$(TAG)
 
+dockerTagLatest: dockerPush
+	docker tag  $(PREFIX):$(TAG)  $(PREFIX):latest
+	docker push $(PREFIX):latest
+
 clean:
 	go clean -v .
 	docker rmi $(PREFIX):$(TAG)

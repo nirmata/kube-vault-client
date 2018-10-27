@@ -68,7 +68,7 @@ func main() {
 		terminate(39, msg)
 	}
 
-	terminate(0, fmt.Sprintf("Wrote Vault secrets to %s", *out))
+	terminate(0, fmt.Sprintf("Retrieved secrets from Vault"))
 }
 
 func terminate(code int, message string) {
