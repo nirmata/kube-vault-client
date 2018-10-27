@@ -6,21 +6,18 @@ IMAGE?=kube-vault-client
 PREFIX?=nirmata/$(IMAGE)
 ARCH?=amd64
 
-
-version:
-	@echo "building $(PREFIX):$(TAG)"
-
-build: version
-	go build -v bitbucket.org/nirmata/go-vault
+build:
+	@echo "version: $(PREFIX):$(TAG)"
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) go build -a -installsuffix cgo -ldflags '-w -s' -o $(IMAGE)
+	docker build -t $(PREFIX):$(TAG) .
 
 dockerBuild: build
-	CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) go build -v -a -installsuffix cgo -ldflags '-w -s' -o $(IMAGE)
-	docker build -t $(PREFIX):$(TAG) .
 
 dockerPush: dockerBuild
 	docker push $(PREFIX):$(TAG)
 
-clean: 
+clean:
 	go clean -v .
+	docker rmi $(PREFIX):$(TAG)
 
 .PHONY: build

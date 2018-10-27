@@ -40,13 +40,13 @@ func kubeLogin() (*api.Client, error) {
 
 	resp, err := client.RawRequest(req)
 	if err != nil {
-		glog.Errorf("ERROR: failed to login with Vault: %v", err)
+		glog.Errorf("ERROR: failed to login with Vault %s", req.URL.String())
 		return nil, err
 	}
 
 	if respErr := resp.Error(); respErr != nil {
 		glog.Errorf("ERROR: api error: %v", respErr)
-		return nil, err
+		return nil, respErr
 	}
 
 	var result api.Secret

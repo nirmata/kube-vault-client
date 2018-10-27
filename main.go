@@ -2,6 +2,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"io/ioutil"
+	"os"
 	"strconv"
 
 	"github.com/golang/glog"
@@ -16,6 +19,7 @@ var tokenPath = flag.String("tokenPath", "/var/run/secrets/kubernetes.io/service
 var out = flag.String("out", "/var/run/secrets/vault", "location to store the secrets fetched from Vault")
 var cert = flag.String("cert", "", "public key to use for HTTPS connections")
 var insecure = flag.Bool("insecure", false, "allow insecure HTTPS connections")
+var terminationMessagePath = flag.String("terminationMessagePath", "/dev/termination-log", "(optional) termination message path")
 
 func main() {
 
@@ -33,13 +37,15 @@ func main() {
 	if *url == "" || *secrets == "" || *kubeAuthRole == "" {
 		glog.Infof("Usage: ")
 		flag.Usage()
-		return
+		msg := fmt.Sprintf("ERROR: Invalid usage")
+		terminate(35, msg)
 	}
 
 	if *jwt == "" {
 		s, err := lookupJwt()
 		if err != nil {
-			glog.Errorf("ERROR: failed to retrieve JWT: %v", err)
+			msg := fmt.Sprintf("ERROR: failed to retrieve JWT: %v", err)
+			terminate(36, msg)
 		}
 
 		*jwt = s
@@ -47,19 +53,31 @@ func main() {
 
 	client, err := kubeLogin()
 	if err != nil {
-		glog.Errorf("ERROR: Failed to login using Kubernetes auth: %v", err)
-		return
+		msg := fmt.Sprintf("ERROR: Failed to login using Kubernetes auth: %v", err)
+		terminate(37, msg)
 	}
 
 	s, err := fetchSecrets(*secrets, client)
 	if err != nil {
-		glog.Errorf("ERROR: failed to fetch secrets: %v", err)
-		return
+		msg := fmt.Sprintf("ERROR: failed to fetch secrets: %v", err)
+		terminate(38, msg)
 	}
 
 	if err := writeSecrets(s, *out); err != nil {
-		glog.Errorf("ERROR: failed to write %d secrets to %s: %v", len(s), *out, err)
+		msg := fmt.Sprintf("ERROR: failed to write %d secrets to %s: %v", len(s), *out, err)
+		terminate(39, msg)
 	}
 
-	glog.Infof("Done!")
+	terminate(0, fmt.Sprintf("Wrote Vault secrets to %s", *out))
+}
+
+func terminate(code int, message string) {
+	if code != 0 {
+		glog.Errorf("Exit Code %d: %s", code, message)
+	} else {
+		glog.Infof("%s", message)
+	}
+
+	ioutil.WriteFile(*terminationMessagePath, []byte(message), 0644)
+	os.Exit(code)
 }
