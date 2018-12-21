@@ -77,13 +77,13 @@ You can control which secrets are retrieved from Vault using a comma separated l
 
 ````
 secret/certs, secret/mysql#password
-```
+````
 
 If the key is not specified, all keys at the specified path are retrieved. If a key is specified, you can also provide an optional variable name. For example:
 
 ````
 secret/mysql#password#MYSQL_PASSWORD
-```
+````
 
 This variable name is used when the secret is stored in the location specified by the **out** parameter. 
 
