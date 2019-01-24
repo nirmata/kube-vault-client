@@ -20,6 +20,7 @@ var out = flag.String("out", "/var/run/secrets/vault", "location to store the se
 var cert = flag.String("cert", "", "public key to use for HTTPS connections")
 var insecure = flag.Bool("insecure", false, "allow insecure HTTPS connections")
 var terminationMessagePath = flag.String("terminationMessagePath", "/dev/termination-log", "(optional) termination message path")
+var namespace = flag.String("namespace", "", "(optional) Vault Enterprise namespace")
 
 func main() {
 
