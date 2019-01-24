@@ -1,8 +1,9 @@
 # kube-vault-client
 
-A Vault client to manage secrets for Kubernetes pods.
+A minimal Vault client to manage secrets for Kubernetes pods.
 
 ***Note: This project is in alpha stage. We are actively working on improving the functionality and incorporating the user feedback. Please see the roadmap. You are welcome to tryout and provide feedback.***
+
 
 ## Overview
 
@@ -20,6 +21,13 @@ Here is what it does:
 
 You can read more how Nirmata uses *kube-vault-client* in this [blog post](https://www.nirmata.com/2018/12/19/managing-kubernetes-secrets-with-hashicorp-vault-and-nirmata/).
 
+
+## Approach
+
+**kube-vault-client** focus only on retrieving secrets from Vault. It is designed to be minimal (which 
+is always great for security!) but complete. This allows concerns (and access permissions) for operating Vault to be cleanly separated from the concerns of accessing secrets.
+
+The design of **kube-vault-client** was heavily inspired by [kube-vault-auth-init] (https://github.com/WealthWizardsEngineering/kube-vault-auth-init). However, **kube-vault-client** does not require a separate AppRole, provides flexible options to map secrets, and provides status and error reporting for use as an Kuberneres init container.
 
 ## Usage
 
