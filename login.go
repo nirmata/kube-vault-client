@@ -15,6 +15,7 @@ func kubeLogin() (*api.Client, error) {
 	glog.Infof("Connecting to Vault at %s", *url)
 
 	httpClient := buildHTTPClient(*url)
+
 	config := &api.Config{
 		Address:    *url,
 		HttpClient: httpClient,
@@ -24,6 +25,11 @@ func kubeLogin() (*api.Client, error) {
 	if err != nil {
 		glog.Errorf("ERROR: failed to connect to Vault at %s: %v", *url, err)
 		return nil, err
+	}
+
+	if *namespace != "" {
+		glog.Infof("Vault client is now using namespace %s", *namespace)
+		client.SetNamespace(*namespace)
 	}
 
 	body := map[string]interface{}{

@@ -53,6 +53,8 @@ Usage of /kube-vault-client:
         If non-empty, write log files in this directory
   -logtostderr
         log to standard error instead of files
+  -namespace
+        (optional) the namespace to use if you have Vault Enterprise (X-Vault-Namespace)
   -out string
         location to store the secrets fetched from Vault (default "/var/run/secrets/vault")
   -secrets string
