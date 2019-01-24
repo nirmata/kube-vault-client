@@ -24,8 +24,8 @@ You can read more how Nirmata uses *kube-vault-client* in this [blog post](https
 
 ## Approach
 
-**kube-vault-client** focus only on retrieving secrets from Vault. It is designed to be minimal (which 
-is always great for security!) but complete. This allows concerns (and access permissions) for operating Vault to be cleanly separated from the concerns of accessing secrets.
+**kube-vault-client** focuses on retrieving secrets from Vault. It is designed to be minimal, which 
+is always great for security, but complete. This allows concernns for operating Vault to be cleanly separated from the concerns of accessing secrets.
 
 The design of **kube-vault-client** was heavily inspired by [kube-vault-auth-init] (https://github.com/WealthWizardsEngineering/kube-vault-auth-init). However, **kube-vault-client** does not require a separate AppRole, provides flexible options to map secrets, and provides status and error reporting for use as an Kuberneres init container.
 
